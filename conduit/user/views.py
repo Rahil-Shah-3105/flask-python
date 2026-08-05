@@ -10,6 +10,7 @@ from conduit.exceptions import InvalidUsage
 from conduit.profile.models import UserProfile
 from .models import User
 from .serializers import user_schema
+import logging
 
 blueprint = Blueprint('user', __name__)
 
@@ -22,6 +23,7 @@ def register_user(username, password, email, **kwargs):
         userprofile = UserProfile(User(username, email, password=password, **kwargs).save()).save()
         userprofile.user.token = create_access_token(identity=userprofile.user)
     except IntegrityError:
+        logger.debug("register_user(username=%s,password=%s,email=%s): userprofile → %s", username, password, email, userprofile)
         db.session.rollback()
         raise InvalidUsage.user_already_registered()
     return userprofile.user
@@ -34,6 +36,7 @@ def register_user(username, password, email, **kwargs):
 def login_user(email, password, **kwargs):
     user = User.query.filter_by(email=email).first()
     if user is not None and user.check_password(password):
+        logger.debug("login_user(email=%s,password=%s): user → %s", email, password, user)
         user.token = create_access_token(identity=user, fresh=True)
         return user
     else:
@@ -44,9 +47,12 @@ def login_user(email, password, **kwargs):
 @jwt_required
 @marshal_with(user_schema)
 def get_user():
+    logger.debug(">>> Entering get_user()")
     user = current_user
     # Not sure about this
+    logger.debug("get_user(): user → %s", user)
     user.token = request.headers.environ['HTTP_AUTHORIZATION'].split('Token ')[1]
+    logger.debug("<<< Exiting get_user()")
     return current_user
 
 
@@ -55,8 +61,11 @@ def get_user():
 @use_kwargs(user_schema)
 @marshal_with(user_schema)
 def update_user(**kwargs):
+    logger.debug(">>> Entering update_user()")
     user = current_user
     # take in consideration the password
+    logger.debug("update_user(): user → %s", user)
+    logger.warning("update_user(): password → %s", password)
     password = kwargs.pop('password', None)
     if password:
         user.set_password(password)

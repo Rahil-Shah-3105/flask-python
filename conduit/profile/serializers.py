@@ -1,4 +1,5 @@
 from marshmallow import Schema, fields, pre_load, post_dump
+import logging
 
 
 class ProfileSchema(Schema):
@@ -13,10 +14,14 @@ class ProfileSchema(Schema):
 
     @pre_load
     def make_user(self, data, **kwargs):
+        logger.debug(">>> Entering make_user(data=%s)", data)
+        logger.debug("<<< Exiting make_user(data=%s)", data)
         return data['profile']
 
     @post_dump
     def dump_user(self, data, **kwargs):
+        logger.debug(">>> Entering dump_user(data=%s)", data)
+        logger.debug("<<< Exiting dump_user(data=%s)", data)
         return {'profile': data}
 
     class Meta:
