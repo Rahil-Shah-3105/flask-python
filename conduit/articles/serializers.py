@@ -3,6 +3,8 @@
 from marshmallow import Schema, fields, pre_load, post_dump
 
 from conduit.profile.serializers import ProfileSchema
+import logging
+logger = logging.getLogger(__name__)
 
 
 class TagSchema(Schema):
@@ -24,11 +26,15 @@ class ArticleSchema(Schema):
 
     @pre_load
     def make_article(self, data, **kwargs):
+        logger.debug(">>> Entering make_article(data=%s)", data)
+        logger.debug("<<< Exiting make_article(data=%s)", data)
         return data['article']
 
     @post_dump
     def dump_article(self, data, **kwargs):
+        logger.debug(">>> Entering dump_article(data=%s)", data)
         data['author'] = data['author']['profile']
+        logger.debug("<<< Exiting dump_article(data=%s)", data)
         return {'article': data}
 
     class Meta:
@@ -44,6 +50,8 @@ class ArticleSchemas(ArticleSchema):
 
     @post_dump(pass_many=True)
     def dump_articles(self, data, many, **kwargs):
+        logger.debug(">>> Entering dump_articles(data=%s,many=%s)", data, many)
+        logger.debug("<<< Exiting dump_articles(data=%s,many=%s)", data, many)
         return {'articles': data, 'articlesCount': len(data)}
 
 
@@ -59,11 +67,17 @@ class CommentSchema(Schema):
 
     @pre_load
     def make_comment(self, data, **kwargs):
+        logger.debug(">>> Entering make_comment(data=%s)", data)
+        logger.debug("<<< Exiting make_comment(data=%s)", data)
         return data['comment']
 
+    logger.debug(">>> Entering make_comment(data=%s,many=%s)", data, many)
+    logger.debug("<<< Exiting make_comment(data=%s,many=%s)", data, many)
     @post_dump
     def dump_comment(self, data, **kwargs):
+        logger.debug(">>> Entering dump_comment(data=%s)", data)
         data['author'] = data['author']['profile']
+        logger.debug("<<< Exiting dump_comment(data=%s)", data)
         return {'comment': data}
 
     class Meta:
