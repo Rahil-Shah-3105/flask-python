@@ -10,6 +10,8 @@ from conduit.exceptions import InvalidUsage
 from conduit.profile.models import UserProfile
 from .models import User
 from .serializers import user_schema
+import logging
+logger = logging.getLogger(__name__)
 
 blueprint = Blueprint('user', __name__)
 
@@ -18,12 +20,17 @@ blueprint = Blueprint('user', __name__)
 @use_kwargs(user_schema)
 @marshal_with(user_schema)
 def register_user(username, password, email, **kwargs):
+    import time; __log_start = time.time()
     try:
         userprofile = UserProfile(User(username, email, password=password, **kwargs).save()).save()
+        import time; __log_start = time.time()
         userprofile.user.token = create_access_token(identity=userprofile.user)
     except IntegrityError:
         db.session.rollback()
+        logger.error("Exception in register_user(username=%s,password=<redacted>,email=%s)", username, email, exc_info=True)
+        logger.info("register_user(username,password,email)=%s,<redacted>,%s: database operation took %s ms", username, email, int((time.time() - __log_start) * 1000))
         raise InvalidUsage.user_already_registered()
+    logger.debug("<<< Exiting register_user(username=%s,password=<redacted>,email=%s)", username, email)
     return userprofile.user
 
 
@@ -35,6 +42,7 @@ def login_user(email, password, **kwargs):
     user = User.query.filter_by(email=email).first()
     if user is not None and user.check_password(password):
         user.token = create_access_token(identity=user, fresh=True)
+        logger.debug("login_user(email=%s,password=<redacted>): user → %s", email, user)
         return user
     else:
         raise InvalidUsage.user_not_found()
@@ -44,9 +52,12 @@ def login_user(email, password, **kwargs):
 @jwt_required
 @marshal_with(user_schema)
 def get_user():
+    logger.debug(">>> Entering get_user()")
+    logger.debug("get_user(): user → %s", user)
     user = current_user
     # Not sure about this
     user.token = request.headers.environ['HTTP_AUTHORIZATION'].split('Token ')[1]
+    logger.debug("<<< Exiting get_user()")
     return current_user
 
 
@@ -55,6 +66,10 @@ def get_user():
 @use_kwargs(user_schema)
 @marshal_with(user_schema)
 def update_user(**kwargs):
+    logger.debug(">>> Entering update_user()")
+    logger.debug("update_user(): user → %s", user)
+    logger.warning("update_user(): password → %s", password)
+    import time; __log_start = time.time()
     user = current_user
     # take in consideration the password
     password = kwargs.pop('password', None)
@@ -63,4 +78,6 @@ def update_user(**kwargs):
     if 'updated_at' in kwargs:
         kwargs['updated_at'] = user.created_at.replace(tzinfo=None)
     user.update(**kwargs)
+    logger.info("update_user()=: update operation took %s ms", int((time.time() - __log_start) * 1000))
+    logger.debug("<<< Exiting update_user()")
     return user
