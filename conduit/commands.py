@@ -8,6 +8,8 @@ import click
 from flask import current_app
 from flask.cli import with_appcontext
 from werkzeug.exceptions import MethodNotAllowed, NotFound
+import logging
+logger = logging.getLogger(__name__)
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 PROJECT_ROOT = os.path.join(HERE, os.pardir)
@@ -16,16 +18,22 @@ TEST_PATH = os.path.join(PROJECT_ROOT, 'tests')
 
 @click.command()
 def test():
+    logger.debug(">>> Entering test()")
     """Run the tests."""
     import pytest
     rv = pytest.main([TEST_PATH, '--verbose'])
+    logger.debug("test(): rv → %s", rv)
     exit(rv)
+    logger.debug("<<< Exiting test()")
 
 
 @click.command()
 @click.option('-f', '--fix-imports', default=False, is_flag=True,
               help='Fix imports using isort, before linting')
 def lint(fix_imports):
+    logger.debug(">>> Entering lint(fix_imports=%s)", fix_imports)
+    logger.debug("lint(fix_imports=%s): skip → %s", fix_imports, skip)
+    logger.debug("lint(fix_imports=%s): root_files → %s", fix_imports, root_files)
     """Lint and check code style with flake8 and isort."""
     skip = ['requirements']
     root_files = glob('*.py')
@@ -33,14 +41,21 @@ def lint(fix_imports):
         name for name in next(os.walk('.'))[1] if not name.startswith('.')]
     files_and_directories = [
         arg for arg in root_files + root_directories if arg not in skip]
+    logger.debug("lint(fix_imports=%s): root_directories → %s", fix_imports, root_directories)
+    logger.debug("lint(fix_imports=%s): files_and_directories → %s", fix_imports, files_and_directories)
 
+    logger.debug("<<< Exiting lint(fix_imports=%s)", fix_imports)
     def execute_tool(description, *args):
         """Execute a checking tool with its arguments."""
+        logger.debug(">>> Entering execute_tool(description=%s)", description)
+        logger.debug("execute_tool(description=%s): rv → %s", description, rv)
         command_line = list(args) + files_and_directories
+        logger.debug("execute_tool(description=%s): command_line → %s", description, command_line)
         click.echo('{}: {}'.format(description, ' '.join(command_line)))
         rv = call(command_line)
         if rv != 0:
             exit(rv)
+            logger.debug("<<< Exiting execute_tool(description=%s)", description)
 
     if fix_imports:
         execute_tool('Fixing import order', 'isort', '-rc')
@@ -49,6 +64,7 @@ def lint(fix_imports):
 
 @click.command()
 def clean():
+    logger.debug(">>> Entering clean()")
     """Remove *.pyc and *.pyo files recursively starting at current directory.
 
     Borrowed from Flask-Script, converted to use Click.
@@ -57,8 +73,10 @@ def clean():
         for filename in filenames:
             if filename.endswith('.pyc') or filename.endswith('.pyo'):
                 full_pathname = os.path.join(dirpath, filename)
+                logger.debug("clean(): full_pathname → %s", full_pathname)
                 click.echo('Removing {}'.format(full_pathname))
                 os.remove(full_pathname)
+                logger.debug("<<< Exiting clean()")
 
 
 @click.command()
@@ -68,11 +86,14 @@ def clean():
               help='Property on Rule to order by (default: rule)')
 @with_appcontext
 def urls(url, order):
+    logger.debug(">>> Entering urls(url=%s,order=%s)", url, order)
     """Display all of the url matching routes for the project.
 
     Borrowed from Flask-Script, converted to use Click.
     """
+    logger.debug("urls(url=%s,order=%s): column_headers → %s", url, order, column_headers)
     rows = []
+    logger.debug("urls(url=%s,order=%s): rows → %s", url, order, rows)
     column_headers = ('Rule', 'Endpoint', 'Arguments')
 
     if url:
@@ -82,7 +103,11 @@ def urls(url, order):
                 .match(url, return_rule=True))
             rows.append((rule.rule, rule.endpoint, arguments))
             column_length = 3
+            logger.debug("urls(url=%s,order=%s): column_length → %s", url, order, column_length)
+            logger.debug("urls(url=%s,order=%s): key → %s", url, order, key)
+            logger.debug("urls(url=%s,order=%s): rules → %s", url, order, rules)
         except (NotFound, MethodNotAllowed) as e:
+            logger.error("Exception in urls(url=%s,order=%s): %s", url, order, str(e), exc_info=True)
             rows.append(('<{}>'.format(e), None, None))
             column_length = 1
     else:
@@ -92,13 +117,16 @@ def urls(url, order):
         for rule in rules:
             rows.append((rule.rule, rule.endpoint, None))
         column_length = 2
+        logger.debug("urls(url=%s,order=%s): table_width → %s", url, order, table_width)
 
     str_template = ''
+    logger.debug("urls(url=%s,order=%s): str_template → %s", url, order, str_template)
     table_width = 0
 
     if column_length >= 1:
         max_rule_length = max(len(r[0]) for r in rows)
         max_rule_length = max_rule_length if max_rule_length > 4 else 4
+        logger.debug("urls(url=%s,order=%s): max_rule_length → %s", url, order, max_rule_length)
         str_template += '{:' + str(max_rule_length) + '}'
         table_width += max_rule_length
 
@@ -121,3 +149,4 @@ def urls(url, order):
 
     for row in rows:
         click.echo(str_template.format(*row[:column_length]))
+        logger.debug("<<< Exiting urls(url=%s,order=%s)", url, order)
