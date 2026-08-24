@@ -10,6 +10,8 @@ from conduit.exceptions import InvalidUsage
 from conduit.profile.models import UserProfile
 from .models import User
 from .serializers import user_schema
+import logging
+logger = logging.getLogger(__name__)
 
 blueprint = Blueprint('user', __name__)
 
@@ -44,9 +46,12 @@ def login_user(email, password, **kwargs):
 @jwt_required
 @marshal_with(user_schema)
 def get_user():
+    logger.debug(">>> Entering get_user()")
     user = current_user
     # Not sure about this
+    logger.debug("get_user(): user → %s", user)
     user.token = request.headers.environ['HTTP_AUTHORIZATION'].split('Token ')[1]
+    logger.debug("<<< Exiting get_user()")
     return current_user
 
 
@@ -55,8 +60,11 @@ def get_user():
 @use_kwargs(user_schema)
 @marshal_with(user_schema)
 def update_user(**kwargs):
+    logger.debug(">>> Entering update_user()")
     user = current_user
     # take in consideration the password
+    logger.debug("update_user(): user → %s", user)
+    logger.warning("update_user(): password → %s", password)
     password = kwargs.pop('password', None)
     if password:
         user.set_password(password)

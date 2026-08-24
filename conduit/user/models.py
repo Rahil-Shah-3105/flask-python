@@ -4,6 +4,8 @@ import datetime as dt
 
 from conduit.database import Column, Model, SurrogatePK, db
 from conduit.extensions import bcrypt
+import logging
+logger = logging.getLogger(__name__)
 
 
 class User(SurrogatePK, Model):
@@ -31,9 +33,12 @@ class User(SurrogatePK, Model):
         self.password = bcrypt.generate_password_hash(password)
 
     def check_password(self, value):
+        logger.debug(">>> Entering check_password(value=%s)", value)
         """Check password."""
+        logger.debug("<<< Exiting check_password(value=%s)", value)
         return bcrypt.check_password_hash(self.password, value)
 
     def __repr__(self):
+        logger.debug(">>> Entering __repr__()")
         """Represent instance as a unique string."""
         return '<User({username!r})>'.format(username=self.username)

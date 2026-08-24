@@ -8,6 +8,8 @@ from slugify import slugify
 from conduit.database import (Model, SurrogatePK, db, Column,
                               reference_col, relationship)
 from conduit.profile.models import UserProfile
+import logging
+logger = logging.getLogger(__name__)
 
 favoriter_assoc = db.Table("favoritor_assoc",
                            db.Column("favoriter", db.Integer, db.ForeignKey("userprofile.id")),
@@ -25,9 +27,13 @@ class Tags(Model):
     tagname = db.Column(db.String(100))
 
     def __init__(self, tagname):
+        logger.debug(">>> Entering __init__(tagname=%s)", tagname)
         db.Model.__init__(self, tagname=tagname)
 
+        logger.debug("<<< Exiting __init__(tagname=%s)", tagname)
     def __repr__(self):
+        logger.debug(">>> Entering __repr__()")
+        logger.debug("<<< Exiting __repr__()")
         return self.tagname
 
 
@@ -43,8 +49,12 @@ class Comment(Model, SurrogatePK):
     article_id = reference_col('article', nullable=False)
 
     def __init__(self, article, author, body, **kwargs):
+        logger.debug(">>> Entering __init__(article=%s,author=%s,body=%s)", article, author, body)
         db.Model.__init__(self, author=author, body=body, article=article, **kwargs)
 
+        logger.debug("<<< Exiting __init__(article=%s,author=%s,body=%s)", article, author, body)
+        logger.debug(">>> Entering __init__(author=%s,title=%s,body=%s,description=%s,slug=%s)", author, title, body, description, slug)
+        logger.debug("<<< Exiting __init__(author=%s,title=%s,body=%s,description=%s,slug=%s)", author, title, body, description, slug)
 
 class Article(SurrogatePK, Model):
     __tablename__ = 'article'
@@ -73,40 +83,55 @@ class Article(SurrogatePK, Model):
         db.Model.__init__(self, author=author, title=title, description=description, body=body,
                           slug=slug or slugify(title), **kwargs)
 
+        logger.debug("__init__(author=%s,title=%s,body=%s,description=%s,slug=%s): slug → %s", author, title, body, description, slug, slug)
     def favourite(self, profile):
+        logger.debug(">>> Entering favourite(profile=%s)", profile)
         if not self.is_favourite(profile):
             self.favoriters.append(profile)
             return True
+        logger.debug("<<< Exiting favourite(profile=%s)", profile)
         return False
 
     def unfavourite(self, profile):
+        logger.debug(">>> Entering unfavourite(profile=%s)", profile)
         if self.is_favourite(profile):
             self.favoriters.remove(profile)
             return True
+        logger.debug("<<< Exiting unfavourite(profile=%s)", profile)
         return False
 
     def is_favourite(self, profile):
+        logger.debug(">>> Entering is_favourite(profile=%s)", profile)
+        logger.debug("<<< Exiting is_favourite(profile=%s)", profile)
         return bool(self.query.filter(favoriter_assoc.c.favoriter == profile.id).count())
 
     def add_tag(self, tag):
+        logger.debug(">>> Entering add_tag(tag=%s)", tag)
         if tag not in self.tagList:
             self.tagList.append(tag)
             return True
+        logger.debug("<<< Exiting add_tag(tag=%s)", tag)
         return False
 
     def remove_tag(self, tag):
+        logger.debug(">>> Entering remove_tag(tag=%s)", tag)
         if tag in self.tagList:
             self.tagList.remove(tag)
             return True
+        logger.debug("<<< Exiting remove_tag(tag=%s)", tag)
         return False
 
     @property
     def favoritesCount(self):
+        logger.debug(">>> Entering favoritesCount()")
+        logger.debug("<<< Exiting favoritesCount()")
         return len(self.favoriters.all())
 
     @property
     def favorited(self):
+        logger.debug(">>> Entering favorited()")
         if current_user:
             profile = current_user.profile
+            logger.debug("favorited(self=%s): profile → %s", self, profile)
             return self.query.join(Article.favoriters).filter(UserProfile.id == profile.id).count() == 1
         return False
