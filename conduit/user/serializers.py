@@ -1,6 +1,8 @@
 # coding: utf-8
 
 from marshmallow import Schema, fields, pre_load, post_dump
+import logging
+logger = logging.getLogger(__name__)
 
 
 class UserSchema(Schema):
@@ -18,16 +20,19 @@ class UserSchema(Schema):
     @pre_load
     def make_user(self, data, **kwargs):
         data = data['user']
+        logger.debug("make_user(data=%s): data → %s", data, data, extra={"event.action": "make_user"})
         # some of the frontends send this like an empty string and some send
         # null
         if not data.get('email', True):
             del data['email']
         if not data.get('image', True):
             del data['image']
+        logger.debug("<<< Exiting make_user(data=%s)", data, extra={"event.action": "make_user"})
         return data
 
     @post_dump
     def dump_user(self, data, **kwargs):
+        logger.debug("<<< Exiting dump_user(data=%s)", data, extra={"event.action": "dump_user"})
         return {'user': data}
 
     class Meta:
