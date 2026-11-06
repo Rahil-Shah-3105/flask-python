@@ -10,6 +10,8 @@ from conduit.exceptions import InvalidUsage
 from conduit.profile.models import UserProfile
 from .models import User
 from .serializers import user_schema
+import logging
+logger = logging.getLogger(__name__)
 
 blueprint = Blueprint('user', __name__)
 
@@ -18,12 +20,18 @@ blueprint = Blueprint('user', __name__)
 @use_kwargs(user_schema)
 @marshal_with(user_schema)
 def register_user(username, password, email, **kwargs):
+    __log_start = time.time()
     try:
         userprofile = UserProfile(User(username, email, password=password, **kwargs).save()).save()
+        logger.debug("register_user(username=%s,password=<redacted>,email=%s): userprofile → %s", username, email, userprofile, extra={"event.action": "register_user", "user.name": str(username), "logrite.email": email})
         userprofile.user.token = create_access_token(identity=userprofile.user)
     except IntegrityError:
+        logger.info("register_user(username,password,email)=%s,<redacted>,%s: save operation took %s ms", username, email, int((time.time() - __log_start) * 1000), extra={"event.action": "register_user", "event.category": "database", "user.name": str(username), "logrite.email": email})
+        logger.info("register_user(username,password,email)=%s,<redacted>,%s: database operation took %s ms", username, email, int((time.time() - __log_start) * 1000), extra={"event.action": "register_user", "event.category": "database", "user.name": str(username), "logrite.email": email})
         db.session.rollback()
+        logger.warning("Exception in register_user(username=%s,password=<redacted>,email=%s)", username, email, exc_info=True, extra={"event.action": "register_user", "event.category": "process", "user.name": str(username), "logrite.email": email})
         raise InvalidUsage.user_already_registered()
+    logger.debug("<<< Exiting register_user(username=%s,password=<redacted>,email=%s)", username, email, extra={"event.action": "register_user", "user.name": str(username), "logrite.email": email})
     return userprofile.user
 
 
@@ -33,10 +41,13 @@ def register_user(username, password, email, **kwargs):
 @marshal_with(user_schema)
 def login_user(email, password, **kwargs):
     user = User.query.filter_by(email=email).first()
+    logger.debug("login_user(email=%s,password=<redacted>): user → %s", email, user, extra={"event.action": "login_user", "logrite.email": email})
     if user is not None and user.check_password(password):
         user.token = create_access_token(identity=user, fresh=True)
+        logger.info("login_user(email,password)=%s,<redacted>: query operation took %s ms", email, int((time.time() - __log_start) * 1000), extra={"event.action": "login_user", "event.category": "database", "logrite.email": email})
         return user
     else:
+        logger.debug("<<< Exiting login_user(email=%s,password=<redacted>)", email, extra={"event.action": "login_user", "logrite.email": email})
         raise InvalidUsage.user_not_found()
 
 
@@ -45,8 +56,10 @@ def login_user(email, password, **kwargs):
 @marshal_with(user_schema)
 def get_user():
     user = current_user
+    logger.debug("get_user(): user → %s", user, extra={"event.action": "get_user"})
     # Not sure about this
     user.token = request.headers.environ['HTTP_AUTHORIZATION'].split('Token ')[1]
+    logger.debug("<<< Exiting get_user()", extra={"event.action": "get_user"})
     return current_user
 
 
@@ -56,11 +69,15 @@ def get_user():
 @marshal_with(user_schema)
 def update_user(**kwargs):
     user = current_user
+    logger.debug("update_user(): user → %s", user, extra={"event.action": "update_user"})
     # take in consideration the password
     password = kwargs.pop('password', None)
+    logger.warning("update_user(): password → <redacted>", extra={"event.action": "update_user"})
     if password:
         user.set_password(password)
     if 'updated_at' in kwargs:
         kwargs['updated_at'] = user.created_at.replace(tzinfo=None)
     user.update(**kwargs)
+    logger.info("update_user()=: update operation took %s ms", int((time.time() - __log_start) * 1000), extra={"event.action": "update_user", "event.category": "database"})
+    logger.debug("<<< Exiting update_user()", extra={"event.action": "update_user"})
     return user
