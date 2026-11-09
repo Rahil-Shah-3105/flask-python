@@ -2,6 +2,8 @@ from flask_jwt_extended import current_user
 
 from conduit.database import (Model, SurrogatePK, db,
                               reference_col, relationship)
+import logging
+logger = logging.getLogger(__name__)
 
 
 followers_assoc = db.Table("followers_assoc",
@@ -26,40 +28,50 @@ class UserProfile(Model, SurrogatePK):
 
     def __init__(self, user, **kwargs):
         db.Model.__init__(self, user=user, **kwargs)
+        logger.debug("<<< Exiting __init__(user=%s)", user, extra={"event.action": "__init__", "user.name": str(user)})
 
     def is_following(self, profile):
+        logger.info("is_following(profile)=%s: count operation executing", profile, extra={"event.action": "is_following", "event.category": "database", "logrite.profile": profile})
+        logger.debug("<<< Exiting is_following(profile=%s)", profile, extra={"event.action": "is_following", "logrite.profile": profile})
         return bool(self.follows.filter(followers_assoc.c.followed_by == profile.id).count())
 
     def follow(self, profile):
         if self is not profile and not self.is_following(profile):
             self.follows.append(profile)
             return True
+        logger.debug("<<< Exiting follow(profile=%s)", profile, extra={"event.action": "follow", "logrite.profile": profile})
         return False
 
     def unfollow(self, profile):
         if self is not profile and self.is_following(profile):
             self.follows.remove(profile)
             return True
+        logger.debug("<<< Exiting unfollow(profile=%s)", profile, extra={"event.action": "unfollow", "logrite.profile": profile})
         return False
 
     @property
     def following(self):
         if current_user:
             return current_user.profile.is_following(self)
+        logger.debug("<<< Exiting following()", extra={"event.action": "following"})
         return False
 
     @property
     def username(self):
+        logger.debug("<<< Exiting username()", extra={"event.action": "username"})
         return self.user.username
 
     @property
     def bio(self):
+        logger.debug("<<< Exiting bio()", extra={"event.action": "bio"})
         return self.user.bio
 
     @property
     def image(self):
+        logger.debug("<<< Exiting image()", extra={"event.action": "image"})
         return self.user.image
 
     @property
     def email(self):
+        logger.debug("<<< Exiting email()", extra={"event.action": "email"})
         return self.user.email
