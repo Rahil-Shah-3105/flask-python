@@ -1,4 +1,6 @@
 from marshmallow import Schema, fields, pre_load, post_dump
+import logging
+logger = logging.getLogger(__name__)
 
 
 class ProfileSchema(Schema):
@@ -13,10 +15,12 @@ class ProfileSchema(Schema):
 
     @pre_load
     def make_user(self, data, **kwargs):
+        logger.debug("<<< Exiting make_user(data=%s)", data, extra={"event.action": "make_user"})
         return data['profile']
 
     @post_dump
     def dump_user(self, data, **kwargs):
+        logger.debug("<<< Exiting dump_user(data=%s)", data, extra={"event.action": "dump_user"})
         return {'profile': data}
 
     class Meta:
