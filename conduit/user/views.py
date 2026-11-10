@@ -10,6 +10,8 @@ from conduit.exceptions import InvalidUsage
 from conduit.profile.models import UserProfile
 from .models import User
 from .serializers import user_schema
+import logging
+logger = logging.getLogger(__name__)
 
 blueprint = Blueprint('user', __name__)
 
@@ -18,6 +20,7 @@ blueprint = Blueprint('user', __name__)
 @use_kwargs(user_schema)
 @marshal_with(user_schema)
 def register_user(username, password, email, **kwargs):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: register_user() method", extra={"event.action": "register_user", "user.name": str(username)})
     try:
         userprofile = UserProfile(User(username, email, password=password, **kwargs).save()).save()
         userprofile.user.token = create_access_token(identity=userprofile.user)
@@ -32,6 +35,7 @@ def register_user(username, password, email, **kwargs):
 @use_kwargs(user_schema)
 @marshal_with(user_schema)
 def login_user(email, password, **kwargs):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: login_user() method", extra={"event.action": "login_user"})
     user = User.query.filter_by(email=email).first()
     if user is not None and user.check_password(password):
         user.token = create_access_token(identity=user, fresh=True)
@@ -44,6 +48,7 @@ def login_user(email, password, **kwargs):
 @jwt_required
 @marshal_with(user_schema)
 def get_user():
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: get_user() method", extra={"event.action": "get_user"})
     user = current_user
     # Not sure about this
     user.token = request.headers.environ['HTTP_AUTHORIZATION'].split('Token ')[1]
@@ -55,6 +60,7 @@ def get_user():
 @use_kwargs(user_schema)
 @marshal_with(user_schema)
 def update_user(**kwargs):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: update_user() method", extra={"event.action": "update_user"})
     user = current_user
     # take in consideration the password
     password = kwargs.pop('password', None)

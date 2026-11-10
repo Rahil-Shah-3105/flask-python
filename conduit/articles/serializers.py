@@ -3,6 +3,8 @@
 from marshmallow import Schema, fields, pre_load, post_dump
 
 from conduit.profile.serializers import ProfileSchema
+import logging
+logger = logging.getLogger(__name__)
 
 
 class TagSchema(Schema):
@@ -24,6 +26,7 @@ class ArticleSchema(Schema):
 
     @pre_load
     def make_article(self, data, **kwargs):
+        logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: make_article() method", extra={"event.action": "make_article"})
         return data['article']
 
     @post_dump
