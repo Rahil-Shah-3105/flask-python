@@ -12,6 +12,8 @@ from conduit.user.models import User
 from .models import Article, Tags, Comment
 from .serializers import (article_schema, articles_schema, comment_schema,
                           comments_schema)
+import logging
+logger = logging.getLogger(__name__)
 
 blueprint = Blueprint('articles', __name__)
 
@@ -26,6 +28,7 @@ blueprint = Blueprint('articles', __name__)
              'favorited': fields.Str(), 'limit': fields.Int(), 'offset': fields.Int()})
 @marshal_with(articles_schema)
 def get_articles(tag=None, author=None, favorited=None, limit=20, offset=0):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: get_articles() method", extra={"event.action": "get_articles", "logrite.tag": tag, "logrite.author": author, "logrite.favorited": favorited, "logrite.limit": limit, "logrite.offset": offset})
     res = Article.query
     if tag:
         res = res.filter(Article.tagList.any(Tags.tagname == tag))
@@ -59,6 +62,7 @@ def make_article(body, title, description, tagList=None):
 @use_kwargs(article_schema)
 @marshal_with(article_schema)
 def update_article(slug, **kwargs):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: update_article() method", extra={"event.action": "update_article", "logrite.slug": slug})
     article = Article.query.filter_by(slug=slug, author_id=current_user.profile.id).first()
     if not article:
         raise InvalidUsage.article_not_found()
@@ -70,6 +74,7 @@ def update_article(slug, **kwargs):
 @blueprint.route('/api/articles/<slug>', methods=('DELETE',))
 @jwt_required
 def delete_article(slug):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: delete_article() method", extra={"event.action": "delete_article", "logrite.slug": slug})
     article = Article.query.filter_by(slug=slug, author_id=current_user.profile.id).first()
     article.delete()
     return '', 200
@@ -79,6 +84,7 @@ def delete_article(slug):
 @jwt_optional
 @marshal_with(article_schema)
 def get_article(slug):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: get_article() method", extra={"event.action": "get_article", "logrite.slug": slug})
     article = Article.query.filter_by(slug=slug).first()
     if not article:
         raise InvalidUsage.article_not_found()
@@ -89,6 +95,7 @@ def get_article(slug):
 @jwt_required
 @marshal_with(article_schema)
 def favorite_an_article(slug):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: favorite_an_article() method", extra={"event.action": "favorite_an_article", "logrite.slug": slug})
     profile = current_user.profile
     article = Article.query.filter_by(slug=slug).first()
     if not article:
@@ -102,6 +109,7 @@ def favorite_an_article(slug):
 @jwt_required
 @marshal_with(article_schema)
 def unfavorite_an_article(slug):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: unfavorite_an_article() method", extra={"event.action": "unfavorite_an_article", "logrite.slug": slug})
     profile = current_user.profile
     article = Article.query.filter_by(slug=slug).first()
     if not article:
@@ -126,6 +134,7 @@ def articles_feed(limit=20, offset=0):
 
 @blueprint.route('/api/tags', methods=('GET',))
 def get_tags():
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: get_tags() method", extra={"event.action": "get_tags"})
     return jsonify({'tags': [tag.tagname for tag in Tags.query.all()]})
 
 
@@ -137,6 +146,7 @@ def get_tags():
 @blueprint.route('/api/articles/<slug>/comments', methods=('GET',))
 @marshal_with(comments_schema)
 def get_comments(slug):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: get_comments() method", extra={"event.action": "get_comments", "logrite.slug": slug})
     article = Article.query.filter_by(slug=slug).first()
     if not article:
         raise InvalidUsage.article_not_found()
@@ -148,6 +158,7 @@ def get_comments(slug):
 @use_kwargs(comment_schema)
 @marshal_with(comment_schema)
 def make_comment_on_article(slug, body, **kwargs):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: make_comment_on_article() method", extra={"event.action": "make_comment_on_article", "logrite.slug": slug})
     article = Article.query.filter_by(slug=slug).first()
     if not article:
         raise InvalidUsage.article_not_found()
@@ -159,6 +170,7 @@ def make_comment_on_article(slug, body, **kwargs):
 @blueprint.route('/api/articles/<slug>/comments/<cid>', methods=('DELETE',))
 @jwt_required
 def delete_comment_on_article(slug, cid):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: delete_comment_on_article() method", extra={"event.action": "delete_comment_on_article", "logrite.slug": slug, "logrite.cid": cid})
     article = Article.query.filter_by(slug=slug).first()
     if not article:
         raise InvalidUsage.article_not_found()

@@ -7,6 +7,8 @@ from flask_jwt_extended import current_user, jwt_required, jwt_optional
 from conduit.exceptions import InvalidUsage
 from conduit.user.models import User
 from .serializers import profile_schema
+import logging
+logger = logging.getLogger(__name__)
 
 blueprint = Blueprint('profiles', __name__)
 
@@ -15,6 +17,7 @@ blueprint = Blueprint('profiles', __name__)
 @jwt_optional
 @marshal_with(profile_schema)
 def get_profile(username):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: get_profile() method", extra={"event.action": "get_profile", "user.name": str(username)})
     user = User.query.filter_by(username=username).first()
     if not user:
         raise InvalidUsage.user_not_found()
@@ -25,6 +28,7 @@ def get_profile(username):
 @jwt_required
 @marshal_with(profile_schema)
 def follow_user(username):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: follow_user() method", extra={"event.action": "follow_user", "user.name": str(username)})
     user = User.query.filter_by(username=username).first()
     if not user:
         raise InvalidUsage.user_not_found()
@@ -37,6 +41,7 @@ def follow_user(username):
 @jwt_required
 @marshal_with(profile_schema)
 def unfollow_user(username):
+    logger.info("CUSTOM-AUDIT[070ab3]: ENTERING: unfollow_user() method", extra={"event.action": "unfollow_user", "user.name": str(username)})
     user = User.query.filter_by(username=username).first()
     if not user:
         raise InvalidUsage.user_not_found()
