@@ -7,6 +7,9 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy, Model
+import time
+import logging
+logger = logging.getLogger(__name__)
 
 
 class CRUDMixin(Model):
@@ -15,25 +18,40 @@ class CRUDMixin(Model):
     @classmethod
     def create(cls, **kwargs):
         """Create a new record and save it the database."""
+        logger.error(">>> Entering create()", extra={"event.action": "create"})
         instance = cls(**kwargs)
+        logger.error("create(): instance → %s", instance, extra={"event.action": "create"})
+        logger.warning("<<< Exiting create()", extra={"event.action": "create"})
         return instance.save()
 
     def update(self, commit=True, **kwargs):
         """Update specific fields of a record."""
+        logger.error(">>> Entering update(commit=%s)", commit, extra={"event.action": "update", "logrite.commit": commit})
         for attr, value in kwargs.items():
             setattr(self, attr, value)
+        logger.error("update(commit)=%s: save operation executing", commit, extra={"event.action": "update", "event.category": "database", "logrite.commit": commit})
+        logger.warning("<<< Exiting update(commit=%s)", commit, extra={"event.action": "update", "logrite.commit": commit})
         return commit and self.save() or self
 
     def save(self, commit=True):
         """Save the record."""
+        logger.error(">>> Entering save(commit=%s)", commit, extra={"event.action": "save", "logrite.commit": commit})
+        __log_start = time.time()
         db.session.add(self)
+        logger.error("save(commit)=%s: save operation took %s ms", commit, int((time.time() - __log_start) * 1000), extra={"event.action": "save", "event.category": "database", "logrite.commit": commit})
         if commit:
             db.session.commit()
+        logger.error("save(commit)=%s: database operation took %s ms", commit, int((time.time() - __log_start) * 1000), extra={"event.action": "save", "event.category": "database", "logrite.commit": commit})
+        logger.warning("<<< Exiting save(commit=%s)", commit, extra={"event.action": "save", "logrite.commit": commit})
         return self
 
     def delete(self, commit=True):
         """Remove the record from the database."""
+        logger.error(">>> Entering delete(commit=%s)", commit, extra={"event.action": "delete", "logrite.commit": commit})
+        __log_start = time.time()
         db.session.delete(self)
+        logger.error("delete(commit)=%s: database operation executing", commit, extra={"event.action": "delete", "event.category": "database", "logrite.commit": commit})
+        logger.warning("<<< Exiting delete(commit=%s)", commit, extra={"event.action": "delete", "logrite.commit": commit})
         return commit and db.session.commit()
 
 

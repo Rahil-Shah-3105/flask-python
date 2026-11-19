@@ -3,6 +3,8 @@
 from marshmallow import Schema, fields, pre_load, post_dump
 
 from conduit.profile.serializers import ProfileSchema
+import logging
+logger = logging.getLogger(__name__)
 
 
 class TagSchema(Schema):
@@ -24,11 +26,15 @@ class ArticleSchema(Schema):
 
     @pre_load
     def make_article(self, data, **kwargs):
+        logger.error(">>> Entering make_article(data=%s)", data, extra={"event.action": "make_article"})
+        logger.warning("<<< Exiting make_article(data=%s)", data, extra={"event.action": "make_article"})
         return data['article']
 
     @post_dump
     def dump_article(self, data, **kwargs):
+        logger.error(">>> Entering dump_article(data=%s)", data, extra={"event.action": "dump_article"})
         data['author'] = data['author']['profile']
+        logger.warning("<<< Exiting dump_article(data=%s)", data, extra={"event.action": "dump_article"})
         return {'article': data}
 
     class Meta:
@@ -44,6 +50,8 @@ class ArticleSchemas(ArticleSchema):
 
     @post_dump(pass_many=True)
     def dump_articles(self, data, many, **kwargs):
+        logger.error(">>> Entering dump_articles(data=%s,many=%s)", data, many, extra={"event.action": "dump_articles", "logrite.many": many})
+        logger.warning("<<< Exiting dump_articles(data=%s,many=%s)", data, many, extra={"event.action": "dump_articles", "logrite.many": many})
         return {'articles': data, 'articlesCount': len(data)}
 
 
@@ -59,11 +67,15 @@ class CommentSchema(Schema):
 
     @pre_load
     def make_comment(self, data, **kwargs):
+        logger.error(">>> Entering make_comment(data=%s)", data, extra={"event.action": "make_comment"})
+        logger.warning("<<< Exiting make_comment(data=%s)", data, extra={"event.action": "make_comment"})
         return data['comment']
 
     @post_dump
     def dump_comment(self, data, **kwargs):
+        logger.error(">>> Entering dump_comment(data=%s)", data, extra={"event.action": "dump_comment"})
         data['author'] = data['author']['profile']
+        logger.warning("<<< Exiting dump_comment(data=%s)", data, extra={"event.action": "dump_comment"})
         return {'comment': data}
 
     class Meta:
@@ -79,6 +91,8 @@ class CommentsSchema(CommentSchema):
 
     @post_dump(pass_many=True)
     def make_comment(self, data, many, **kwargs):
+        logger.error(">>> Entering make_comment(data=%s,many=%s)", data, many, extra={"event.action": "make_comment", "logrite.many": many})
+        logger.warning("<<< Exiting make_comment(data=%s,many=%s)", data, many, extra={"event.action": "make_comment", "logrite.many": many})
         return {'comments': data}
 
 
