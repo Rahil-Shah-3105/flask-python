@@ -53,12 +53,15 @@ def make_article(body, title, description, tagList=None):
     article = Article(title=title, description=description, body=body,
                       author=current_user.profile)
     if tagList is not None:
+        __log_start = time.time()
         for tag in tagList:
             mtag = Tags.query.filter_by(tagname=tag).first()
+            logger.error("make_article(body,title,description,tagList)=%s,%s,%s,%s: query operation took %s ms", body, title, description, tagList, int((time.time() - __log_start) * 1000), extra={"event.action": "make_article", "event.category": "database", "logrite.title": title, "logrite.description": description, "logrite.tagList": tagList})
             logger.error("make_article(body=%s,title=%s,description=%s,tagList=%s): mtag → %s", body, title, description, tagList, mtag, extra={"event.action": "make_article", "logrite.title": title, "logrite.description": description, "logrite.tagList": tagList})
             if not mtag:
                 mtag = Tags(tag)
                 mtag.save()
+                logger.error("make_article(body,title,description,tagList)=%s,%s,%s,%s: save operation took %s ms", body, title, description, tagList, int((time.time() - __log_start) * 1000), extra={"event.action": "make_article", "event.category": "database", "logrite.title": title, "logrite.description": description, "logrite.tagList": tagList})
             article.add_tag(mtag)
     article.save()
     logger.warning("<<< Exiting make_article(body=%s,title=%s,description=%s,tagList=%s)", body, title, description, tagList, extra={"event.action": "make_article", "logrite.title": title, "logrite.description": description, "logrite.tagList": tagList})
@@ -158,6 +161,7 @@ def unfavorite_an_article(slug):
 @marshal_with(articles_schema)
 def articles_feed(limit=20, offset=0):
     logger.error(">>> Entering articles_feed(limit=%s,offset=%s)", limit, offset, extra={"event.action": "articles_feed", "logrite.limit": limit, "logrite.offset": offset})
+    logger.error("articles_feed(limit,offset)=%s,%s: query operation executing", limit, offset, extra={"event.action": "articles_feed", "event.category": "database", "logrite.limit": limit, "logrite.offset": offset})
     return Article.query.join(current_user.profile.follows). \
         order_by(Article.createdAt.desc()).offset(offset).limit(limit).all()
     logger.warning("<<< Exiting articles_feed(limit=%s,offset=%s)", limit, offset, extra={"event.action": "articles_feed", "logrite.limit": limit, "logrite.offset": offset})
@@ -170,6 +174,7 @@ def articles_feed(limit=20, offset=0):
 @blueprint.route('/api/tags', methods=('GET',))
 def get_tags():
     logger.error(">>> Entering get_tags()", extra={"event.action": "get_tags"})
+    logger.error("get_tags()=: query operation executing", extra={"event.action": "get_tags", "event.category": "database"})
     logger.warning("<<< Exiting get_tags()", extra={"event.action": "get_tags"})
     return jsonify({'tags': [tag.tagname for tag in Tags.query.all()]})
 
