@@ -45,6 +45,7 @@ def reference_col(tablename, nullable=False, pk_name='id', **kwargs):
         category = relationship('Category', backref='categories')
     """
     logger.error(">>> Entering reference_col(tablename=%s,nullable=%s,pk_name=%s)", tablename, nullable, pk_name, extra={"event.action": "reference_col", "logrite.tablename": tablename, "logrite.nullable": nullable, "logrite.pk_name": pk_name})
+    logger.warning("<<< Exiting reference_col(tablename=%s,nullable=%s,pk_name=%s)", tablename, nullable, pk_name, extra={"event.action": "reference_col", "logrite.tablename": tablename, "logrite.nullable": nullable, "logrite.pk_name": pk_name})
     return db.Column(
         db.ForeignKey('{0}.{1}'.format(tablename, pk_name)),
         nullable=nullable, **kwargs)

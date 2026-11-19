@@ -21,6 +21,7 @@ class CRUDMixin(Model):
         logger.error(">>> Entering create()", extra={"event.action": "create"})
         instance = cls(**kwargs)
         logger.error("create(): instance → %s", instance, extra={"event.action": "create"})
+        logger.error("create()=: save operation executing", extra={"event.action": "create", "event.category": "database"})
         logger.warning("<<< Exiting create()", extra={"event.action": "create"})
         return instance.save()
 
