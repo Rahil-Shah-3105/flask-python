@@ -4,6 +4,8 @@ from sqlalchemy.orm import relationship
 
 from .compat import basestring
 from .extensions import db
+import logging
+logger = logging.getLogger(__name__)
 
 # Alias common SQLAlchemy names
 Column = db.Column
@@ -24,10 +26,13 @@ class SurrogatePK(object):
     @classmethod
     def get_by_id(cls, record_id):
         """Get record by ID."""
+        logger.error(">>> Entering get_by_id(record_id=%s)", record_id, extra={"event.action": "get_by_id", "logrite.record_id": record_id})
         if any(
                 (isinstance(record_id, basestring) and record_id.isdigit(),
                  isinstance(record_id, (int, float))),
         ):
+            logger.error("get_by_id(record_id)=%s: find operation executing", record_id, extra={"event.action": "get_by_id", "event.category": "database", "logrite.record_id": record_id})
+            logger.warning("<<< Exiting get_by_id(record_id=%s)", record_id, extra={"event.action": "get_by_id", "logrite.record_id": record_id})
             return cls.query.get(int(record_id))
 
 
@@ -39,6 +44,7 @@ def reference_col(tablename, nullable=False, pk_name='id', **kwargs):
         category_id = reference_col('category')
         category = relationship('Category', backref='categories')
     """
+    logger.error(">>> Entering reference_col(tablename=%s,nullable=%s,pk_name=%s)", tablename, nullable, pk_name, extra={"event.action": "reference_col", "logrite.tablename": tablename, "logrite.nullable": nullable, "logrite.pk_name": pk_name})
     return db.Column(
         db.ForeignKey('{0}.{1}'.format(tablename, pk_name)),
         nullable=nullable, **kwargs)
