@@ -8,6 +8,8 @@ import click
 from flask import current_app
 from flask.cli import with_appcontext
 from werkzeug.exceptions import MethodNotAllowed, NotFound
+import logging
+logger = logging.getLogger(__name__)
 
 HERE = os.path.abspath(os.path.dirname(__file__))
 PROJECT_ROOT = os.path.join(HERE, os.pardir)
@@ -17,9 +19,12 @@ TEST_PATH = os.path.join(PROJECT_ROOT, 'tests')
 @click.command()
 def test():
     """Run the tests."""
+    logger.error(">>> Entering test()", extra={"event.action": "test"})
     import pytest
     rv = pytest.main([TEST_PATH, '--verbose'])
+    logger.error("test(): rv → %s", rv, extra={"event.action": "test"})
     exit(rv)
+    logger.warning("<<< Exiting test()", extra={"event.action": "test"})
 
 
 @click.command()
@@ -27,20 +32,28 @@ def test():
               help='Fix imports using isort, before linting')
 def lint(fix_imports):
     """Lint and check code style with flake8 and isort."""
+    logger.error(">>> Entering lint(fix_imports=%s)", fix_imports, extra={"event.action": "lint", "logrite.fix_imports": fix_imports})
     skip = ['requirements']
+    logger.error("lint(fix_imports=%s): skip → %s", fix_imports, skip, extra={"event.action": "lint", "logrite.fix_imports": fix_imports})
     root_files = glob('*.py')
+    logger.error("lint(fix_imports=%s): root_files → %s", fix_imports, root_files, extra={"event.action": "lint", "logrite.fix_imports": fix_imports})
     root_directories = [
         name for name in next(os.walk('.'))[1] if not name.startswith('.')]
     files_and_directories = [
         arg for arg in root_files + root_directories if arg not in skip]
+    logger.warning("<<< Exiting lint(fix_imports=%s)", fix_imports, extra={"event.action": "lint", "logrite.fix_imports": fix_imports})
 
     def execute_tool(description, *args):
         """Execute a checking tool with its arguments."""
+        logger.error(">>> Entering execute_tool(description=%s)", description, extra={"event.action": "execute_tool", "logrite.description": description})
         command_line = list(args) + files_and_directories
+        logger.error("execute_tool(description=%s): command_line → %s", description, command_line, extra={"event.action": "execute_tool", "logrite.description": description})
         click.echo('{}: {}'.format(description, ' '.join(command_line)))
         rv = call(command_line)
+        logger.error("execute_tool(description=%s): rv → %s", description, rv, extra={"event.action": "execute_tool", "logrite.description": description})
         if rv != 0:
             exit(rv)
+            logger.warning("<<< Exiting execute_tool(description=%s)", description, extra={"event.action": "execute_tool", "logrite.description": description})
 
     if fix_imports:
         execute_tool('Fixing import order', 'isort', '-rc')
@@ -53,12 +66,15 @@ def clean():
 
     Borrowed from Flask-Script, converted to use Click.
     """
+    logger.error(">>> Entering clean()", extra={"event.action": "clean"})
     for dirpath, _, filenames in os.walk('.'):
         for filename in filenames:
             if filename.endswith('.pyc') or filename.endswith('.pyo'):
                 full_pathname = os.path.join(dirpath, filename)
+                logger.error("clean(): full_pathname → %s", full_pathname, extra={"event.action": "clean"})
                 click.echo('Removing {}'.format(full_pathname))
                 os.remove(full_pathname)
+                logger.warning("<<< Exiting clean()", extra={"event.action": "clean"})
 
 
 @click.command()
@@ -72,8 +88,10 @@ def urls(url, order):
 
     Borrowed from Flask-Script, converted to use Click.
     """
+    logger.error(">>> Entering urls(url=%s,order=%s)", url, order, extra={"event.action": "urls", "logrite.url": url, "logrite.order": order})
     rows = []
     column_headers = ('Rule', 'Endpoint', 'Arguments')
+    logger.error("urls(url=%s,order=%s): column_headers → %s", url, order, column_headers, extra={"event.action": "urls", "logrite.url": url, "logrite.order": order})
 
     if url:
         try:
@@ -83,6 +101,7 @@ def urls(url, order):
             rows.append((rule.rule, rule.endpoint, arguments))
             column_length = 3
         except (NotFound, MethodNotAllowed) as e:
+            logger.error("Exception in urls(url=%s,order=%s): %s", url, order, str(e), exc_info=True, extra={"event.action": "urls", "event.category": "process", "logrite.url": url, "logrite.order": order})
             rows.append(('<{}>'.format(e), None, None))
             column_length = 1
     else:
@@ -94,6 +113,7 @@ def urls(url, order):
         column_length = 2
 
     str_template = ''
+    logger.error("urls(url=%s,order=%s): str_template → %s", url, order, str_template, extra={"event.action": "urls", "logrite.url": url, "logrite.order": order})
     table_width = 0
 
     if column_length >= 1:
@@ -120,4 +140,5 @@ def urls(url, order):
     click.echo('-' * table_width)
 
     for row in rows:
+        logger.warning("<<< Exiting urls(url=%s,order=%s)", url, order, extra={"event.action": "urls", "logrite.url": url, "logrite.order": order})
         click.echo(str_template.format(*row[:column_length]))
