@@ -42,8 +42,10 @@ def register_user(username, password, email, **kwargs):
 @use_kwargs(user_schema)
 @marshal_with(user_schema)
 def login_user(email, password, **kwargs):
+    __log_start = time.time()
     logger.error(">>> Entering login_user(email=<redacted>,password=<redacted>)", extra={"event.action": "login_user"})
     user = User.query.filter_by(email=email).first()
+    logger.error("login_user(email,password)=<redacted>,<redacted>: query operation took %s ms", int((time.time() - __log_start) * 1000), extra={"event.action": "login_user", "event.category": "database"})
     if user is not None and user.check_password(password):
         logger.error("login_user(email=<redacted>,password=<redacted>): user → %s", user, extra={"event.action": "login_user"})
         user.token = create_access_token(identity=user, fresh=True)
